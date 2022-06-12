@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MQTTnet.AspNetCore.Extensions;
 using WalkingTec.Mvvm.Core;
 
 namespace IoTGateway
@@ -15,14 +13,6 @@ namespace IoTGateway
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine(@"
-██╗ ██████╗ ████████╗ ██████╗  █████╗ ████████╗███████╗██╗    ██╗ █████╗ ██╗   ██╗
-██║██╔═══██╗╚══██╔══╝██╔════╝ ██╔══██╗╚══██╔══╝██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝
-██║██║   ██║   ██║   ██║  ███╗███████║   ██║   █████╗  ██║ █╗ ██║███████║ ╚████╔╝ 
-██║██║   ██║   ██║   ██║   ██║██╔══██║   ██║   ██╔══╝  ██║███╗██║██╔══██║  ╚██╔╝  
-██║╚██████╔╝   ██║   ╚██████╔╝██║  ██║   ██║   ███████╗╚███╔███╔╝██║  ██║   ██║   
-╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝   
-");
             CreateWebHostBuilder(args).Build().Run();
         }
 
@@ -43,11 +33,6 @@ namespace IoTGateway
                 .ConfigureWebHostDefaults(webBuilder =>
                  {
                      webBuilder.UseStartup<Startup>();
-                     webBuilder.UseKestrel(option =>
-                     {
-                         option.ListenAnyIP(1888, l => l.UseMqtt());
-                         option.ListenAnyIP(518);
-                     });
                  });
         }
     }

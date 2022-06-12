@@ -1,80 +1,90 @@
 // WTM默认页面 Wtm buidin page
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Core.Extensions;
+using WalkingTec.Mvvm.Mvc;
 using WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs;
 
-namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
+namespace WalkingTec.Mvvm.Admin.Api
 {
-    [Area("_Admin")]
+    [AuthorizeJwtWithCookie]
     [ActionDescription("MenuKey.ActionLog")]
-    [FixConnection(CsName = "defaultlog")]
-    public class ActionLogController : BaseController
+    [ApiController]
+    [Route("api/_[controller]")]
+    public class ActionLogController : BaseApiController
     {
         [ActionDescription("Sys.Search")]
-        public IActionResult Index()
+        [HttpPost("[action]")]
+        public IActionResult Search(ActionLogSearcher searcher)
         {
-            var vm = Wtm.CreateVM<ActionLogListVM>();
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Search")]
-        [HttpPost]
-        public string Search(ActionLogSearcher searcher)
-        {
-            var vm = Wtm.CreateVM<ActionLogListVM>(passInit:true);
             if (ModelState.IsValid)
             {
+                var vm = Wtm.CreateVM<ActionLogListVM>(passInit:true);
                 vm.Searcher = searcher;
-                return vm.GetJson(false);
+                return Content(vm.GetJson());
             }
             else
             {
-                return vm.GetError();
+                return BadRequest(ModelState.GetErrorJson());
+            }
+        }
+
+        [ActionDescription("Sys.Get")]
+        [HttpGet("{id}")]
+        public ActionLogVM Get(Guid id)
+        {
+            var vm = Wtm.CreateVM<ActionLogVM>(id);
+            return vm;
+        }
+
+        [HttpPost("[action]")]
+        [ActionDescription("Sys.Delete")]
+        public IActionResult BatchDelete(string[] ids)
+        {
+            var vm = Wtm.CreateVM<ActionLogBatchVM>();
+            if (ids != null && ids.Count() > 0)
+            {
+                vm.Ids = ids;
+            }
+            else
+            {
+                return Ok();
+            }
+            if (!ModelState.IsValid || !vm.DoBatchDelete())
+            {
+                return BadRequest(ModelState.GetErrorJson());
+            }
+            else
+            {
+                return Ok(ids.Count());
             }
         }
 
 
-        [HttpGet]
-        [ActionDescription("Sys.Details")]
-        public IActionResult Details(string id)
-        {
-            var vm = Wtm.CreateVM<ActionLogVM>(id);
-            return PartialView(vm);
-        }
-
         [ActionDescription("Sys.Export")]
-        [HttpPost]
-        public IActionResult ExportExcel(ActionLogListVM vm)
+        [HttpPost("[action]")]
+        public IActionResult ExportExcel(ActionLogSearcher searcher)
         {
+            var vm = Wtm.CreateVM<ActionLogListVM>();
+            vm.Searcher = searcher;
+            vm.SearcherMode = ListVMSearchModeEnum.Export;
             return vm.GetExportData();
         }
 
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult BatchDelete(string[] IDs)
+        [ActionDescription("Sys.ExportByIds")]
+        [HttpPost("[action]")]
+        public IActionResult ExportExcelByIds(string[] ids)
         {
-            var vm = Wtm.CreateVM<ActionLogBatchVM>(Ids: IDs);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult DoBatchDelete(ActionLogBatchVM vm, IFormCollection nouse)
-        {
-            if (!ModelState.IsValid || !vm.DoBatchDelete())
+            var vm = Wtm.CreateVM<ActionLogListVM>();
+            if (ids != null && ids.Count() > 0)
             {
-                return PartialView("BatchDelete", vm);
+                vm.Ids = new List<string>(ids);
+                vm.SearcherMode = ListVMSearchModeEnum.CheckExport;
             }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.BatchDeleteSuccess", vm.Ids.Length]);
-            }
+            return vm.GetExportData();
         }
-
     }
 }

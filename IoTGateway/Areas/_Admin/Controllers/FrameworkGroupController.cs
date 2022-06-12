@@ -1,130 +1,125 @@
 // WTM默认页面 Wtm buidin page
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Core.Extensions;
+using WalkingTec.Mvvm.Mvc;
 using WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkGroupVMs;
 
-namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
+namespace WalkingTec.Mvvm.Admin.Api
 {
-    [Area("_Admin")]
+    [AuthorizeJwtWithCookie]
     [ActionDescription("MenuKey.GroupManagement")]
-    public class FrameworkGroupController : BaseController
+    [ApiController]
+    [Route("api/_[controller]")]
+    public class FrameworkGroupController : BaseApiController
     {
-        #region 查询
         [ActionDescription("Sys.Search")]
-        public ActionResult Index()
+        [HttpPost("[action]")]
+        public IActionResult Search(FrameworkGroupSearcher searcher)
         {
-            var vm = Wtm.CreateVM<FrameworkGroupListVM>();
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Search")]
-        [HttpPost]
-        public string Search(FrameworkGroupSearcher searcher)
-        {
-            var vm = Wtm.CreateVM<FrameworkGroupListVM>(passInit: true);
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm).Result;
+            }
             if (ModelState.IsValid)
             {
+                var vm = Wtm.CreateVM<FrameworkGroupListVM>(passInit: true);
                 vm.Searcher = searcher;
-                return vm.GetJson(false);
+                return Content(vm.GetJson());
             }
             else
             {
-                return vm.GetError();
+                return BadRequest(ModelState.GetErrorJson());
             }
         }
-        #endregion
 
-        [ActionDescription("Sys.Create")]
-        public ActionResult Create()
+        [ActionDescription("Sys.Get")]
+        [HttpGet("{id}")]
+        public FrameworkGroupVM Get(Guid id)
         {
-            var vm = Wtm.CreateVM<FrameworkGroupVM>();
-            return PartialView(vm);
+            var vm = Wtm.CreateVM<FrameworkGroupVM>(id);
+            return vm;
         }
 
-        [HttpPost]
         [ActionDescription("Sys.Create")]
-        public ActionResult Create(FrameworkGroupVM vm)
+        [HttpPost("[action]")]
+        public IActionResult Add(FrameworkGroupVM vm)
         {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
                 vm.DoAdd();
-                return FFResult().CloseDialog().RefreshGrid();
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState.GetErrorJson());
+                }
+                else
+                {
+                    return Ok(vm.Entity);
+                }
             }
+
         }
 
         [ActionDescription("Sys.Edit")]
-        public ActionResult Edit(Guid id)
+        [HttpPut("[action]")]
+        public IActionResult Edit(FrameworkGroupVM vm)
         {
-            var vm = Wtm.CreateVM<FrameworkGroupVM>(id);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.Edit")]
-        [ValidateFormItemOnly]
-        public ActionResult Edit(FrameworkGroupVM vm)
-        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                vm.DoEdit();
-                return FFResult().CloseDialog().RefreshGrid();
+                vm.DoEdit(false);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState.GetErrorJson());
+                }
+                else
+                {
+                    return Ok(vm.Entity);
+                }
             }
         }
 
+        [HttpPost("BatchDelete")]
         [ActionDescription("Sys.Delete")]
-        public ActionResult Delete(Guid id)
+        public async Task<IActionResult> BatchDelete(string[] ids)
         {
-            var vm = Wtm.CreateVM<FrameworkGroupVM>(id);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.Delete")]
-        public async Task<ActionResult> Delete(Guid id, IFormCollection noUse)
-        {
-            var vm = Wtm.CreateVM<FrameworkGroupVM>(id);
-            await vm.DoDeleteAsync();
-            if (!ModelState.IsValid)
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
             {
-                return PartialView(vm);
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            var vm = Wtm.CreateVM<FrameworkGroupBatchVM>();
+            List<string> GroupCode = new List<string>();
+            if (ids != null && ids.Count() > 0)
+            {
+                GroupCode = DC.Set<FrameworkGroup>().CheckIDs(new List<string>(ids)).Select(x => x.GroupCode).ToList();
+                vm.Ids = ids;
             }
             else
             {
-                return FFResult().CloseDialog().RefreshGrid();
+                return Ok();
             }
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult BatchDelete(Guid[] ids)
-        {
-            var vm = Wtm.CreateVM<FrameworkGroupBatchVM>(Ids: ids);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public async Task<ActionResult> DoBatchDelete(FrameworkGroupBatchVM vm, IFormCollection noUse)
-        {
-            List<string> GroupCode = DC.Set<FrameworkGroup>().CheckIDs(new List<string>(vm.Ids)).Select(x => x.GroupCode).ToList();
             if (!ModelState.IsValid || !vm.DoBatchDelete())
-            {                
-                return PartialView("BatchDelete", vm);
+            {
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
@@ -132,54 +127,104 @@ namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
                 var itcodes = gr.Select(x => x.UserCode).ToArray();
                 DC.Set<FrameworkUserGroup>().RemoveRange(gr);
                 DC.SaveChanges();
-                await Wtm.RemoveUserCache(itcodes);
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.OprationSuccess"]);
+                await Wtm.RemoveUserCacheByGroup(GroupCode.ToArray());
+                Wtm.RemoveGroupCache(Wtm.LoginUserInfo.CurrentTenant).Wait();
+                return Ok(ids.Count());
             }
-        }
-
-        [ActionDescription("Sys.Import")]
-        public ActionResult Import()
-        {
-            var vm = Wtm.CreateVM<FrameworkGroupImportVM>();
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.Import")]
-        public ActionResult Import(FrameworkGroupImportVM vm, IFormCollection nouse)
-        {
-            if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
-            {
-                return PartialView(vm);
-            }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.ImportSuccess", vm.EntityList.Count.ToString()]);
-            }
-        }
-
-        [ActionDescription("_Admin.DataPrivilege")]
-        public PartialViewResult DataFunction(string groupcode)
-        {
-            var role = Wtm.CreateVM<FrameworkGroupMDVM>(values: x=>x.GroupCode == groupcode);
-            return PartialView(role);
-        }
-
-        [ActionDescription("_Admin.DataPrivilege")]
-        [HttpPost]
-        public ActionResult DataFunction(FrameworkGroupMDVM vm, IFormCollection noUse)
-        {
-            vm.DoChange();
-            return FFResult().CloseDialog().Alert(Localizer["Sys.OprationSuccess"]);
         }
 
         [ActionDescription("Sys.Export")]
-        [HttpPost]
-        public IActionResult ExportExcel(FrameworkGroupListVM vm)
+        [HttpPost("[action]")]
+        public IActionResult ExportExcel(FrameworkGroupSearcher searcher)
         {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            var vm = Wtm.CreateVM<FrameworkGroupListVM>();
+            vm.Searcher = searcher;
+            vm.SearcherMode = ListVMSearchModeEnum.Export;
             return vm.GetExportData();
         }
 
-    }
+        [ActionDescription("Sys.ExportByIds")]
+        [HttpPost("[action]")]
+        public IActionResult ExportExcelByIds(string[] ids)
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            var vm = Wtm.CreateVM<FrameworkGroupListVM>();
+            if (ids != null && ids.Count() > 0)
+            {
+                vm.Ids = new List<string>(ids);
+                vm.SearcherMode = ListVMSearchModeEnum.CheckExport;
+            }
+            return vm.GetExportData();
+        }
 
+        [ActionDescription("Sys.DownloadTemplate")]
+        [HttpGet("[action]")]
+        public IActionResult GetExcelTemplate()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            var vm = Wtm.CreateVM<FrameworkGroupImportVM>();
+            var qs = new Dictionary<string, string>();
+            foreach (var item in Request.Query.Keys)
+            {
+                qs.Add(item, Request.Query[item]);
+            }
+            vm.SetParms(qs);
+            var data = vm.GenerateTemplate(out string fileName);
+            return File(data, "application/vnd.ms-excel", fileName);
+        }
+
+        [ActionDescription("Sys.Import")]
+        [HttpPost("[action]")]
+        public ActionResult Import(FrameworkGroupImportVM vm)
+        {
+
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
+            {
+                return BadRequest(vm.GetErrorJson());
+            }
+            else
+            {
+                Wtm.RemoveGroupCache(Wtm.LoginUserInfo.CurrentTenant).Wait();
+                return Ok(vm.EntityList.Count);
+            }
+        }
+
+        [AllRights]
+        [HttpGet("[action]")]
+        public IActionResult GetParents()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkgroup/GetParents").Result;
+            }
+            var data = DC.Set<FrameworkGroup>().GetSelectListItems(Wtm, x => x.GroupName);
+            return Ok(data);
+        }
+
+        [AllRights]
+        [HttpGet("[action]")]
+        public IActionResult GetParentsTree()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkgroup/GetParentsTree").Result;
+            }
+            var data = DC.Set<FrameworkGroup>().GetTreeSelectListItems(Wtm, x => x.GroupName);
+            return Ok(data);
+        }
+    }
 }

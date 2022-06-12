@@ -1,216 +1,127 @@
 // WTM默认页面 Wtm buidin page
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Linq;
-using WalkingTec.Mvvm.Core;
-using WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkUserVms;
-using WalkingTec.Mvvm.Core.Extensions;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WalkingTec.Mvvm.Core;
+using WalkingTec.Mvvm.Core.Extensions;
+using WalkingTec.Mvvm.Mvc;
+using WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkUserVms;
 
-namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
+namespace WalkingTec.Mvvm.Admin.Api
 {
-    [Area("_Admin")]
+    [AuthorizeJwtWithCookie]
     [ActionDescription("MenuKey.UserManagement")]
-    public class FrameworkUserController : BaseController
+    [ApiController]
+    [Route("api/_FrameworkUser")]
+    public class FrameworkUserController : BaseApiController
     {
-        [ActionDescription("Sys.Search", IsPage = true)]
-        public ActionResult Index()
-        {
-            var vm = Wtm.CreateVM<FrameworkUserListVM>();
-            vm.Searcher.IsValid = true;
-            return PartialView(vm);
-        }
-
         [ActionDescription("Sys.Search")]
-        [HttpPost]
-        public string Search(FrameworkUserSearcher searcher)
+        [HttpPost("[action]")]
+        public IActionResult Search(FrameworkUserSearcher searcher)
         {
-            var vm = Wtm.CreateVM<FrameworkUserListVM>(passInit: true);
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm).Result;
+            }
             if (ModelState.IsValid)
             {
+                var vm = Wtm.CreateVM<FrameworkUserListVM>(passInit: true);
                 vm.Searcher = searcher;
-                return vm.GetJson(false);
+                return Content(vm.GetJson());
             }
             else
             {
-                return vm.GetError();
+                return BadRequest(ModelState.GetErrorJson());
             }
         }
 
-
-        [ActionDescription("Sys.Create")]
-        public ActionResult Create()
+        [ActionDescription("Sys.Get")]
+        [HttpGet("{id}")]
+        public FrameworkUserVM Get(Guid id)
         {
-            var vm = Wtm.CreateVM<FrameworkUserVM>();
-            return PartialView(vm);
+            var vm = Wtm.CreateVM<FrameworkUserVM>(id);
+            return vm;
         }
 
-        [HttpPost]
         [ActionDescription("Sys.Create")]
-        public async Task<ActionResult> Create(FrameworkUserVM vm)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Add(FrameworkUserVM vm)
         {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
                 await vm.DoAddAsync();
                 if (!ModelState.IsValid)
                 {
-                    vm.DoReInit();
-                    return PartialView(vm);
+                    return BadRequest(ModelState.GetErrorJson());
                 }
                 else
                 {
-                    return FFResult().CloseDialog().RefreshGrid();
+                    return Ok(vm.Entity);
                 }
             }
+
         }
 
         [ActionDescription("Sys.Edit")]
-        public ActionResult Edit(string id)
+        [HttpPut("[action]")]
+        public async Task<IActionResult> Edit(FrameworkUserVM vm)
         {
-            var vm = Wtm.CreateVM<FrameworkUserVM>(id);
-            vm.Entity.Password = null;
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Edit")]
-        [HttpPost]
-        [ValidateFormItemOnly]
-        public async Task<ActionResult> Edit(FrameworkUserVM vm)
-        {
-            if (ModelState.Any(x => x.Key != "Entity.Password" && x.Value.ValidationState == Microsoft.AspNetCore.Mvc.ModelBinding.ModelValidationState.Invalid))
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
             {
-                return PartialView(vm);
+                return Content(Localizer["_Admin.HasMainHost"]);
             }
-            else
-            {
-                ModelState.Clear();
-                await vm.DoEditAsync();
-                if (!ModelState.IsValid)
-                {
-                    vm.DoReInit();
-                    return PartialView(vm);
-                }
-                else
-                {
-                    return FFResult().CloseDialog().RefreshGridRow(vm.Entity.ID);
-                }
-            }
-        }
-
-        [ActionDescription("Login.ChangePassword")]
-        public ActionResult Password(Guid id)
-        {
-            var vm = Wtm.CreateVM<FrameworkUserVM>(id, passInit: true);
-            vm.Entity.Password = null;
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Login.ChangePassword")]
-        [HttpPost]
-        public ActionResult Password(FrameworkUserVM vm)
-        {
-            var keys = ModelState.Keys.ToList();
-            foreach (var item in keys)
-            {
-                if (item != "Entity.Password")
-                {
-                    ModelState.Remove(item);
-                }
-            }
-            if (ModelState.IsValid == false)
-            {
-                return PartialView(vm);
-            }
-            else
-            {
-                vm.ChangePassword();
-                if (!ModelState.IsValid)
-                {
-                    vm.DoReInit();
-                    return PartialView(vm);
-                }
-                else
-                {
-                    return FFResult().CloseDialog().RefreshGridRow(vm.Entity.ID);
-                }
-            }
-        }
-
-        [ActionDescription("Sys.Delete")]
-        public ActionResult Delete(Guid id)
-        {
-            var vm = Wtm.CreateVM<FrameworkUserVM>(id);
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Delete")]
-        [HttpPost]
-        public async Task<ActionResult> Delete(Guid id, IFormCollection nouse)
-        {
-            var vm = Wtm.CreateVM<FrameworkUserVM>(id);
-            await vm.DoDeleteAsync();
+            ModelState.Remove("Entity.Password");
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                return FFResult().CloseDialog().RefreshGrid();
+                await vm.DoEditAsync(false);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState.GetErrorJson());
+                }
+                else
+                {
+                    return Ok(vm.Entity);
+                }
             }
         }
 
-        [ActionDescription("Sys.Details")]
-        public PartialViewResult Details(Guid id)
+        [HttpPost("BatchDelete")]
+        [ActionDescription("Sys.Delete")]
+        public async Task<IActionResult> BatchDelete(string[] ids)
         {
-            var v = Wtm.CreateVM<FrameworkUserVM>(id);
-            return PartialView("Details", v);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchEdit")]
-        public ActionResult BatchEdit(string[] IDs)
-        {
-            var vm = Wtm.CreateVM<FrameworkUserBatchVM>(Ids: IDs);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchEdit")]
-        public ActionResult DoBatchEdit(FrameworkUserBatchVM vm, IFormCollection nouse)
-        {
-            if (!ModelState.IsValid || !vm.DoBatchEdit())
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
             {
-                return PartialView("BatchEdit", vm);
+                return Content(Localizer["_Admin.HasMainHost"]);
             }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.BatchEditSuccess", vm.Ids.Length]);
-            }
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult BatchDelete(string[] IDs)
-        {
-            var vm = Wtm.CreateVM<FrameworkUserBatchVM>(Ids: IDs);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public async Task<ActionResult> DoBatchDelete(FrameworkUserBatchVM vm, IFormCollection nouse)
-        {
+            var vm = Wtm.CreateVM<FrameworkUserBatchVM>();
             List<string> itcode = new List<string>();
-            itcode = DC.Set<FrameworkUser>().CheckIDs(new List<string>(vm.Ids)).Select(x => x.ITCode).ToList();
+            if (ids != null && ids.Count() > 0)
+            {
+                vm.Ids = ids;
+                itcode = DC.Set<FrameworkUser>().CheckIDs(new List<string>(ids)).Select(x => x.ITCode).ToList();
+            }
+            else
+            {
+                return Ok();
+            }
             if (!ModelState.IsValid || !vm.DoBatchDelete())
             {
-                return PartialView("BatchDelete", vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
@@ -232,54 +143,153 @@ namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
                 }
 
                 await Wtm.RemoveUserCache(itcode.ToArray());
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.OprationSuccess"]);
+                return Ok(ids.Count());
             }
-        }
-
-        [ActionDescription("Sys.Import")]
-        public ActionResult Import()
-        {
-            var vm = Wtm.CreateVM<FrameworkUserImportVM>();
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.Import")]
-        public ActionResult Import(FrameworkUserImportVM vm, IFormCollection nouse)
-        {
-            if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
-            {
-                return PartialView(vm);
-            }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.ImportSuccess", vm.EntityList.Count.ToString()]);
-            }
-        }
-
-        [ActionDescription("Sys.Enable")]
-        public ActionResult Enable(Guid id, bool enable)
-        {
-            FrameworkUser user = new FrameworkUser { ID = id };
-            user.IsValid = enable;
-            DC.UpdateProperty(user, x => x.IsValid);
-            DC.SaveChanges();
-            return FFResult().RefreshGrid(CurrentWindowId);
-        }
-
-        [AllRights]
-        public ActionResult GetUserById(string keywords)
-        {
-            var users = DC.Set<FrameworkUser>().Where(x => x.ITCode.ToLower().StartsWith(keywords.ToLower())).GetSelectListItems(Wtm, x => x.Name + "(" + x.ITCode + ")", x => x.ITCode);
-            return JsonMore(users);
-
         }
 
         [ActionDescription("Sys.Export")]
-        [HttpPost]
-        public IActionResult ExportExcel(FrameworkUserListVM vm)
+        [HttpPost("[action]")]
+        public IActionResult ExportExcel(FrameworkUserSearcher searcher)
         {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            var vm = Wtm.CreateVM<FrameworkUserListVM>();
+            vm.Searcher = searcher;
+            vm.SearcherMode = ListVMSearchModeEnum.Export;
             return vm.GetExportData();
+        }
+
+        [ActionDescription("Sys.ExportByIds")]
+        [HttpPost("[action]")]
+        public IActionResult ExportExcelByIds(string[] ids)
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            var vm = Wtm.CreateVM<FrameworkUserListVM>();
+            if (ids != null && ids.Count() > 0)
+            {
+                vm.Ids = new List<string>(ids);
+                vm.SearcherMode = ListVMSearchModeEnum.CheckExport;
+            }
+            return vm.GetExportData();
+        }
+
+        [ActionDescription("Sys.DownloadTemplate")]
+        [HttpGet("[action]")]
+        public IActionResult GetExcelTemplate()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            var vm = Wtm.CreateVM<FrameworkUserImportVM>();
+            var qs = new Dictionary<string, string>();
+            if (Request != null)
+            {
+                foreach (var item in Request.Query.Keys)
+                {
+                    qs.Add(item, Request.Query[item]);
+                }
+            }
+            vm.SetParms(qs);
+            var data = vm.GenerateTemplate(out string fileName);
+            return File(data, "application/vnd.ms-excel", fileName);
+        }
+
+        [ActionDescription("Sys.Import")]
+        [HttpPost("[action]")]
+        public ActionResult Import(FrameworkUserImportVM vm)
+        {
+
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Content(Localizer["_Admin.HasMainHost"]);
+            }
+            if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
+            {
+                return BadRequest(vm.GetErrorJson());
+            }
+            else
+            {
+                return Ok(vm.EntityList.Count);
+            }
+        }
+
+        [HttpGet("GetFrameworkRoles")]
+        [ActionDescription("GetRoles")]
+        [AllRights]
+        public IActionResult GetFrameworkRoles()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkuser/GetFrameworkRoles").Result;
+            }
+            return Ok(DC.Set<FrameworkRole>().GetSelectListItems(Wtm, x => x.RoleName, x => x.RoleCode));
+        }
+
+        [HttpGet("GetFrameworkGroups")]
+        [ActionDescription("GetGroups")]
+        [AllRights]
+        public IActionResult GetFrameworkGroups()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkuser/GetFrameworkGroups").Result;
+            }
+            return Ok(DC.Set<FrameworkGroup>().GetSelectListItems(Wtm, x => x.GroupName, x => x.GroupCode));
+        }
+
+        [HttpGet("GetFrameworkGroupsTree")]
+        [ActionDescription("GetGroupsTree")]
+        [AllRights]
+        public IActionResult GetFrameworkGroupsTree()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkuser/GetFrameworkGroupsTree").Result;
+            }
+            return Ok(DC.Set<FrameworkGroup>().GetTreeSelectListItems(Wtm, x => x.GroupName, x => x.GroupCode));
+        }
+
+
+        [HttpGet("GetUserById")]
+        [AllRights]
+        public IActionResult GetUserById(string keywords)
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkuser/GetUserById").Result;
+            }
+            var users = DC.Set<FrameworkUser>().Where(x => x.ITCode.ToLower().StartsWith(keywords.ToLower())).GetSelectListItems(Wtm, x => x.Name + "(" + x.ITCode + ")", x => x.ITCode);
+            return Ok(users);
+        }
+
+        [HttpGet("GetUserByGroup")]
+        [AllRights]
+        public IActionResult GetUserByGroup(string keywords)
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkuser/GetUserByGroup").Result;
+            }
+            var users = DC.Set<FrameworkUserGroup>().Where(x => x.GroupCode == keywords).Select(x=>x.UserCode).ToList();
+            return Ok(users);
+        }
+
+        [HttpGet("GetUserByRole")]
+        [AllRights]
+        public IActionResult GetUserByRole(string keywords)
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_frameworkuser/GetUserByRole").Result;
+            }
+            var users = DC.Set<FrameworkUserRole>().Where(x => x.RoleCode == keywords).Select(x => x.UserCode).ToList();
+            return Ok(users);
         }
     }
 }

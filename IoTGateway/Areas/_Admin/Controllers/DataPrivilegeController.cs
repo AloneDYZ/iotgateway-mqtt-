@@ -2,135 +2,166 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using WalkingTec.Mvvm.Core;
-using WalkingTec.Mvvm.Mvc.Admin.ViewModels.DataPrivilegeVMs;
 using WalkingTec.Mvvm.Core.Extensions;
-using System.Threading.Tasks;
+using WalkingTec.Mvvm.Mvc;
+using WalkingTec.Mvvm.Mvc.Admin.ViewModels.DataPrivilegeVMs;
 
-namespace WalkingTec.Mvvm.Mvc.Admin.Controllers
+namespace WalkingTec.Mvvm.Admin.Api
 {
-    [Area("_Admin")]
+    [AuthorizeJwtWithCookie]
     [ActionDescription("MenuKey.DataPrivilege")]
-    public class DataPrivilegeController : BaseController
+    [ApiController]
+    [Route("api/_[controller]")]
+    public class DataPrivilegeController : BaseApiController
     {
         [ActionDescription("Sys.Search")]
-        public ActionResult Index()
+        [HttpPost("[action]")]
+        public ActionResult Search(DataPrivilegeSearcher searcher)
         {
-            var vm = Wtm.CreateVM<DataPrivilegeListVM>();
-            vm.Searcher.TableNames = Wtm.DataPrivilegeSettings.ToListItems(x => x.PrivillegeName, x => x.ModelName);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        public ActionResult Index(DataPrivilegeListVM vm)
-        {
-            vm.Searcher.TableNames = Wtm.DataPrivilegeSettings.ToListItems(x => x.PrivillegeName, x => x.ModelName);
-            return PartialView(vm);
-        }
-
-
-        [ActionDescription("Sys.Search")]
-        [HttpPost]
-        public string Search(DataPrivilegeSearcher searcher)
-        {
-            var vm = Wtm.CreateVM<DataPrivilegeListVM>(passInit: true);
             if (ModelState.IsValid)
             {
+                var vm = Wtm.CreateVM<DataPrivilegeListVM>(passInit: true);
                 vm.Searcher = searcher;
-                return vm.GetJson(false);
+                return Content(vm.GetJson());
             }
             else
             {
-                return vm.GetError();
+                return BadRequest(ModelState.GetErrorJson());
             }
         }
 
-        [ActionDescription("Sys.Create")]
-        public ActionResult Create(DpTypeEnum Type)
+        [ActionDescription("Sys.Get")]
+        [HttpGet("[action]")]
+        public DataPrivilegeVM Get(string TableName, string TargetId, DpTypeEnum DpType)
         {
-            var vm = Wtm.CreateVM<DataPrivilegeVM>(values:x=>x.DpType == Type);
-            return PartialView(vm);
+            DataPrivilegeVM vm = null;
+            if (DpType == DpTypeEnum.User)
+            {
+                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == TableName && x.Entity.UserCode == TargetId && x.DpType == DpType);
+            }
+            else
+            {
+                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == TableName && x.Entity.GroupCode == TargetId && x.DpType == DpType);
+            }
+            return vm;
         }
 
-        [HttpPost]
         [ActionDescription("Sys.Create")]
-        public async Task<ActionResult> Create(DataPrivilegeVM vm)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Add(DataPrivilegeVM vm)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
                 await vm.DoAddAsync();
-                return FFResult().CloseDialog().RefreshGrid();
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState.GetErrorJson());
+                }
+                else
+                {
+                    return Ok(vm.Entity);
+                }
             }
+
         }
 
         [ActionDescription("Sys.Edit")]
-        public ActionResult Edit(string ModelName, string Id, DpTypeEnum Type)
-        {
-            DataPrivilegeVM vm = null;
-            if (Type == DpTypeEnum.User)
-            {
-                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == ModelName && x.Entity.UserCode == Id && x.DpType == Type);
-            }
-            else
-            {
-                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == ModelName && x.Entity.GroupCode == Id && x.DpType == Type);
-            }
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Edit")]
-        [HttpPost]
-        public async Task<ActionResult> Edit(DataPrivilegeVM vm)
+        [HttpPut("[action]")]
+        public async Task<IActionResult> Edit(DataPrivilegeVM vm)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                await vm.DoEditAsync();
-                return FFResult().CloseDialog().RefreshGrid();
+                await vm.DoEditAsync(false);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState.GetErrorJson());
+                }
+                else
+                {
+                    return Ok(vm.Entity);
+                }
             }
         }
 
+
+        [HttpPost("[action]")]
         [ActionDescription("Sys.Delete")]
-        public async Task<ActionResult> Delete(string ModelName, string Id, DpTypeEnum Type)
+        public async Task<ActionResult> Delete(SimpleDpModel dp)
         {
             DataPrivilegeVM vm = null;
-            if (Type == DpTypeEnum.User)
+            if (dp.Type == DpTypeEnum.User)
             {
-                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == ModelName && x.Entity.UserCode == Id && x.DpType == Type);
+                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == dp.ModelName && x.Entity.UserCode == dp.Id && x.DpType == dp.Type);
             }
             else
             {
-                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == ModelName && x.Entity.GroupCode == Id && x.DpType == Type);
+                vm = Wtm.CreateVM<DataPrivilegeVM>(values: x => x.Entity.TableName == dp.ModelName && x.Entity.GroupCode == dp.Id && x.DpType == dp.Type);
             }
             await vm.DoDeleteAsync();
-            return FFResult().RefreshGrid();
+            return Ok(1);
         }
 
+
+
         [AllRights]
+        [HttpGet("[action]")]
         public ActionResult GetPrivilegeByTableName(string table)
         {
             var AllItems = new List<ComboSelectListItem>();
-            var dps = Wtm.DataPrivilegeSettings.Where(x => x.ModelName == table).SingleOrDefault();
+            var dps =Wtm.DataPrivilegeSettings.Where(x => x.ModelName == table).SingleOrDefault();
             if (dps != null)
             {
                 AllItems = dps.GetItemList(Wtm);
             }
-            return JsonMore(AllItems);
+            return Ok(AllItems);
         }
 
-        [ActionDescription("Sys.Export")]
-        [HttpPost]
-        public IActionResult ExportExcel(DataPrivilegeListVM vm)
+        [AllRights]
+        [HttpGet("[action]")]
+        public ActionResult GetPrivileges()
         {
-            return vm.GetExportData();
+            var rv = Wtm.DataPrivilegeSettings.ToListItems(x => x.PrivillegeName, x => x.ModelName);
+            return Ok(rv);
         }
+
+        [AllRights]
+        [HttpGet("[action]")]
+        public IActionResult GetUserGroups()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_DataPrivilege/GetUserGroups").Result;
+            }
+            return Ok(DC.Set<FrameworkGroup>().GetSelectListItems(Wtm, x => x.GroupName, x => x.GroupCode));
+        }
+
+        [AllRights]
+        [HttpGet("[action]")]
+        public IActionResult GetUserGroupsTree()
+        {
+            if (ConfigInfo.HasMainHost && Wtm.LoginUserInfo?.CurrentTenant == null)
+            {
+                return Request.RedirectCall(Wtm, "/api/_DataPrivilege/GetUserGroupsTree").Result;
+            }
+            return Ok(DC.Set<FrameworkGroup>().GetTreeSelectListItems(Wtm, x => x.GroupName, x => x.GroupCode));
+        }
+    }
+
+    public class SimpleDpModel
+    {
+        public string ModelName { get; set; }
+        public string Id { get; set; }
+        public DpTypeEnum Type { get; set; }
     }
 }
