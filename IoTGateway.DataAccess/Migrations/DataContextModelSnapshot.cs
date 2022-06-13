@@ -15,7 +15,7 @@ namespace IoTGateway.DataAccess.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.0");
 
             modelBuilder.Entity("IoTGateway.Model.Device", b =>
                 {
@@ -315,6 +315,9 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Property<string>("Remark")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TenantCode")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("UpdateBy")
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
@@ -352,6 +355,9 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Property<string>("TableName")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenantCode")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UpdateBy")
@@ -402,6 +408,9 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Property<string>("SaveMode")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TenantCode")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("UploadTime")
                         .HasColumnType("TEXT");
 
@@ -414,13 +423,6 @@ namespace IoTGateway.DataAccess.Migrations
                 {
                     b.Property<Guid>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CreateBy")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("CreateTime")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("GroupCode")
@@ -436,17 +438,18 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Property<string>("GroupRemark")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Manager")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("TenantCode")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("UpdateBy")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdateTime")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("ID");
+
+                    b.HasIndex("ParentId");
 
                     b.ToTable("FrameworkGroups");
                 });
@@ -504,6 +507,9 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Property<bool>("ShowOnMenu")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool?>("TenantAllowed")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Url")
                         .HasColumnType("TEXT");
 
@@ -555,6 +561,63 @@ namespace IoTGateway.DataAccess.Migrations
                     b.ToTable("FrameworkRoles");
                 });
 
+            modelBuilder.Entity("WalkingTec.Mvvm.Core.FrameworkTenant", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CreateTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DbContext")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EnableSub")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TDb")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("TDbType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TDomain")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenantCode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdateTime")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("FrameworkTenants");
+                });
+
             modelBuilder.Entity("WalkingTec.Mvvm.Core.FrameworkUser", b =>
                 {
                     b.Property<Guid>("ID")
@@ -591,7 +654,7 @@ namespace IoTGateway.DataAccess.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsValid")
+                    b.Property<bool?>("IsValid")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
@@ -644,6 +707,9 @@ namespace IoTGateway.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TenantCode")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("UpdateBy")
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
@@ -675,6 +741,9 @@ namespace IoTGateway.DataAccess.Migrations
 
                     b.Property<string>("RoleCode")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TenantCode")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UpdateBy")
@@ -716,6 +785,9 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Property<string>("RoleCode")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TenantCode")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("UpdateBy")
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
@@ -725,37 +797,7 @@ namespace IoTGateway.DataAccess.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("MenuItemId");
-
                     b.ToTable("FunctionPrivileges");
-                });
-
-            modelBuilder.Entity("WalkingTec.Mvvm.Core.PersistedGrant", b =>
-                {
-                    b.Property<Guid>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Expiration")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RefreshToken")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Type")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UserCode")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("ID");
-
-                    b.ToTable("PersistedGrants");
                 });
 
             modelBuilder.Entity("IoTGateway.Model.Device", b =>
@@ -800,6 +842,15 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Navigation("Device");
                 });
 
+            modelBuilder.Entity("WalkingTec.Mvvm.Core.FrameworkGroup", b =>
+                {
+                    b.HasOne("WalkingTec.Mvvm.Core.FrameworkGroup", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId");
+
+                    b.Navigation("Parent");
+                });
+
             modelBuilder.Entity("WalkingTec.Mvvm.Core.FrameworkMenu", b =>
                 {
                     b.HasOne("WalkingTec.Mvvm.Core.FrameworkMenu", "Parent")
@@ -819,17 +870,6 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Navigation("Photo");
                 });
 
-            modelBuilder.Entity("WalkingTec.Mvvm.Core.FunctionPrivilege", b =>
-                {
-                    b.HasOne("WalkingTec.Mvvm.Core.FrameworkMenu", "MenuItem")
-                        .WithMany("Privileges")
-                        .HasForeignKey("MenuItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("MenuItem");
-                });
-
             modelBuilder.Entity("IoTGateway.Model.Device", b =>
                 {
                     b.Navigation("Children");
@@ -839,11 +879,14 @@ namespace IoTGateway.DataAccess.Migrations
                     b.Navigation("DeviceVariables");
                 });
 
+            modelBuilder.Entity("WalkingTec.Mvvm.Core.FrameworkGroup", b =>
+                {
+                    b.Navigation("Children");
+                });
+
             modelBuilder.Entity("WalkingTec.Mvvm.Core.FrameworkMenu", b =>
                 {
                     b.Navigation("Children");
-
-                    b.Navigation("Privileges");
                 });
 #pragma warning restore 612, 618
         }

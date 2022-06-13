@@ -22,6 +22,8 @@ namespace IoTGateway.ViewModel.Config.SystemConfigVMs
         public ExcelPropety MqttUName_Excel = ExcelPropety.CreateProperty<SystemConfig>(x => x.MqttUName);
         [Display(Name = "Mqtt密码")]
         public ExcelPropety MqttUPwd_Excel = ExcelPropety.CreateProperty<SystemConfig>(x => x.MqttUPwd);
+        [Display(Name = "输出平台")]
+        public ExcelPropety IoTPlatformType_Excel = ExcelPropety.CreateProperty<SystemConfig>(x => x.IoTPlatformType);
 
 	    protected override void InitVM()
         {

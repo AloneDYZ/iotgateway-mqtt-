@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Core.Extensions;
 using IoTGateway.Model;
-using Plugin;
+
 
 namespace IoTGateway.ViewModel.BasicData.DeviceConfigVMs
 {
@@ -17,27 +17,7 @@ namespace IoTGateway.ViewModel.BasicData.DeviceConfigVMs
             ListVM = new DeviceConfigListVM();
             LinkedVM = new DeviceConfig_BatchEdit();
         }
-        public override bool DoBatchDelete()
-        {
-            var ret = base.DoBatchDelete();
-            if (ret)
-            {
-                var deviceService = Wtm.ServiceProvider.GetService(typeof(DeviceService)) as DeviceService;
-                UpdateDevices.UpdateConfig(DC, deviceService, FC);
-            }
-            return ret;
-        }
 
-        public override bool DoBatchEdit()
-        {
-            var ret = base.DoBatchEdit();
-            if (ret)
-            {
-                var deviceService = Wtm.ServiceProvider.GetService(typeof(DeviceService)) as DeviceService;
-                UpdateDevices.UpdateConfig(DC, deviceService, FC);
-            }
-            return ret;
-        }
     }
 
 	/// <summary>
@@ -45,8 +25,6 @@ namespace IoTGateway.ViewModel.BasicData.DeviceConfigVMs
     /// </summary>
     public class DeviceConfig_BatchEdit : BaseVM
     {
-        [Display(Name = "值")]
-        public String Value { get; set; }
 
         protected override void InitVM()
         {

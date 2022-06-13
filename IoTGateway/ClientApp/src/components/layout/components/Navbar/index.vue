@@ -34,10 +34,10 @@
                     <a v-if="isDev" target="_blank" href="http://iotgateway.net/">
                         <el-dropdown-item>{{$t('navbar.doc')}}</el-dropdown-item>
                     </a>
-                    <a v-if="isDev" target="_blank" href="http://localhost:5478/_codegen?ui=vue">
+                    <a v-if="isDev" target="_blank" href="http://localhost:518/_codegen?ui=vue">
                         <el-dropdown-item>{{$t('navbar.generation')}}</el-dropdown-item>
                     </a>
-                    <a v-if="isDev" target="_blank" href="http://localhost:5478/swagger">
+                    <a v-if="isDev" target="_blank" href="http://localhost:518/swagger">
                         <el-dropdown-item>{{$t('navbar.api')}}</el-dropdown-item>
                     </a>
                     <a @click="onOpenPassword">

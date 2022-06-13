@@ -22,11 +22,11 @@ module.exports = merge(baseConfig, {
     openPage: "index.html",
     proxy: {
       "/api": {
-        target: "http://localhost:5478/",
+        target: "http://localhost:518/",
         changeOrigin: true
       },
       "/_framework": {
-        target: "http://localhost:5478/",
+        target: "http://localhost:518/",
         changeOrigin: true
       }
     }

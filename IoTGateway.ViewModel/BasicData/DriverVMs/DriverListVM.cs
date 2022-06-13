@@ -13,21 +13,6 @@ namespace IoTGateway.ViewModel.BasicData.DriverVMs
 {
     public partial class DriverListVM : BasePagedListVM<Driver_View, DriverSearcher>
     {
-        protected override List<GridAction> InitGridAction()
-        {
-            return new List<GridAction>
-            {
-                this.MakeStandardAction("Driver", GridActionStandardTypesEnum.Create, Localizer["Sys.Create"],"BasicData", dialogWidth: 800),
-                this.MakeStandardAction("Driver", GridActionStandardTypesEnum.Edit, Localizer["Sys.Edit"], "BasicData", dialogWidth: 800),
-                this.MakeStandardAction("Driver", GridActionStandardTypesEnum.Delete, Localizer["Sys.Delete"], "BasicData", dialogWidth: 800),
-                this.MakeStandardAction("Driver", GridActionStandardTypesEnum.Details, Localizer["Sys.Details"], "BasicData", dialogWidth: 800),
-                this.MakeStandardAction("Driver", GridActionStandardTypesEnum.BatchEdit, Localizer["Sys.BatchEdit"], "BasicData", dialogWidth: 800),
-                this.MakeStandardAction("Driver", GridActionStandardTypesEnum.BatchDelete, Localizer["Sys.BatchDelete"], "BasicData", dialogWidth: 800),
-                //this.MakeStandardAction("Driver", GridActionStandardTypesEnum.Import, Localizer["Sys.Import"], "BasicData", dialogWidth: 800),
-                //this.MakeStandardAction("Driver", GridActionStandardTypesEnum.ExportExcel, Localizer["Sys.Export"], "BasicData"),
-            };
-        }
-
 
         protected override IEnumerable<IGridColumn<Driver_View>> InitGridHeader()
         {
@@ -44,6 +29,7 @@ namespace IoTGateway.ViewModel.BasicData.DriverVMs
         {
             var query = DC.Set<Driver>()
                 .CheckContain(Searcher.DriverName, x=>x.DriverName)
+                .CheckContain(Searcher.AssembleName, x=>x.AssembleName)
                 .Select(x => new Driver_View
                 {
 				    ID = x.ID,

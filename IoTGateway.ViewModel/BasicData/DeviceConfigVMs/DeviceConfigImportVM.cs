@@ -14,6 +14,8 @@ namespace IoTGateway.ViewModel.BasicData.DeviceConfigVMs
     {
         [Display(Name = "名称")]
         public ExcelPropety DeviceConfigName_Excel = ExcelPropety.CreateProperty<DeviceConfig>(x => x.DeviceConfigName);
+        [Display(Name = "属性侧")]
+        public ExcelPropety DataSide_Excel = ExcelPropety.CreateProperty<DeviceConfig>(x => x.DataSide);
         [Display(Name = "描述")]
         public ExcelPropety Description_Excel = ExcelPropety.CreateProperty<DeviceConfig>(x => x.Description);
         [Display(Name = "值")]

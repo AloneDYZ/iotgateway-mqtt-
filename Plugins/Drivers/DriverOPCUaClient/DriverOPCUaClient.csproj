@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <OutputPath>../../../IoTGateway/bin/Debug/net6.0/drivers</OutputPath>
+	  <OutputPath>../../../IoTGateway/bin/Debug/net6.0/drivers/$(MSBuildProjectName)/</OutputPath>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

@@ -19,8 +19,12 @@ namespace IoTGateway.ViewModel.BasicData.DeviceVMs
         [Display(Name = "描述")]
         public ExcelPropety Description_Excel = ExcelPropety.CreateProperty<Device>(x => x.Description);
         public ExcelPropety Driver_Excel = ExcelPropety.CreateProperty<Device>(x => x.DriverId);
-        [Display(Name = "自启动")]
+        [Display(Name = "启动")]
         public ExcelPropety AutoStart_Excel = ExcelPropety.CreateProperty<Device>(x => x.AutoStart);
+        [Display(Name = "变化上传")]
+        public ExcelPropety CgUpload_Excel = ExcelPropety.CreateProperty<Device>(x => x.CgUpload);
+        [Display(Name = "归档周期ms")]
+        public ExcelPropety EnforcePeriod_Excel = ExcelPropety.CreateProperty<Device>(x => x.EnforcePeriod);
         [Display(Name = "类型")]
         public ExcelPropety DeviceTypeEnum_Excel = ExcelPropety.CreateProperty<Device>(x => x.DeviceTypeEnum);
         [Display(Name = "_Admin.Parent")]
@@ -29,7 +33,7 @@ namespace IoTGateway.ViewModel.BasicData.DeviceVMs
 	    protected override void InitVM()
         {
             Driver_Excel.DataType = ColumnDataType.ComboBox;
-            Driver_Excel.ListItems = DC.Set<Driver>().GetSelectListItems(Wtm, y => y.DriverName);
+            Driver_Excel.ListItems = DC.Set<Driver>().GetSelectListItems(Wtm, y => y.AssembleName);
             Parent_Excel.DataType = ColumnDataType.ComboBox;
             Parent_Excel.ListItems = DC.Set<Device>().GetSelectListItems(Wtm, y => y.DeviceName);
         }

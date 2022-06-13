@@ -1,311 +1,180 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using WalkingTec.Mvvm.Core;
-using WalkingTec.Mvvm.Mvc;
 using WalkingTec.Mvvm.Core.Extensions;
+using WalkingTec.Mvvm.Mvc;
 using IoTGateway.ViewModel.BasicData.DeviceVMs;
-using Plugin;
+using IoTGateway.Model;
+
 
 namespace IoTGateway.Controllers
 {
     [Area("BasicData")]
+    [AuthorizeJwtWithCookie]
     [ActionDescription("设备维护")]
-    public partial class DeviceController : BaseController
+    [ApiController]
+    [Route("api/Device")]
+	public partial class DeviceController : BaseApiController
     {
-        private DeviceService _DeviceService;
-        public DeviceController(DeviceService deviceService)
-        {
-            _DeviceService = deviceService;
-        }
-        #region Search
         [ActionDescription("Sys.Search")]
-        public ActionResult Index()
+        [HttpPost("Search")]
+		public IActionResult Search(DeviceSearcher searcher)
         {
-            var vm = Wtm.CreateVM<DeviceListVM>();
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Search")]
-        [HttpPost]
-        public string Search(DeviceSearcher searcher)
-        {
-            var vm = Wtm.CreateVM<DeviceListVM>(passInit: true);
             if (ModelState.IsValid)
             {
+                var vm = Wtm.CreateVM<DeviceListVM>(passInit: true);
                 vm.Searcher = searcher;
-                return vm.GetJson(false);
+                return Content(vm.GetJson());
             }
             else
             {
-                return vm.GetError();
+                return BadRequest(ModelState.GetErrorJson());
             }
         }
 
-        #endregion
-
-        #region Create
-        [ActionDescription("创建设备")]
-        public ActionResult Create()
+        [ActionDescription("Sys.Get")]
+        [HttpGet("{id}")]
+        public DeviceVM Get(string id)
         {
-            var vm = Wtm.CreateVM<DeviceVM>();
-            vm.Entity.DeviceTypeEnum = Model.DeviceTypeEnum.Device;
-            return PartialView(vm);
+            var vm = Wtm.CreateVM<DeviceVM>(id);
+            return vm;
         }
 
-        [HttpPost]
-        [ActionDescription("创建设备")]
-        public ActionResult Create(DeviceVM vm)
+        [ActionDescription("Sys.Create")]
+        [HttpPost("Add")]
+        public IActionResult Add(DeviceVM vm)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                vm.Entity.DeviceTypeEnum = Model.DeviceTypeEnum.Device;
                 vm.DoAdd();
                 if (!ModelState.IsValid)
                 {
-                    vm.DoReInit();
-                    return PartialView(vm);
+                    return BadRequest(ModelState.GetErrorJson());
                 }
                 else
                 {
-                    return FFResult().CloseDialog().RefreshGrid();
+                    return Ok(vm.Entity);
                 }
             }
-        }
-        #endregion
-        #region Create
-        [ActionDescription("Sys.Create")]
-        public ActionResult CreateGroup()
-        {
-            var vm = Wtm.CreateVM<DeviceVM>();
-            vm.Entity.DeviceTypeEnum = Model.DeviceTypeEnum.Group;
-            return PartialView(vm);
-        }
 
-        [HttpPost]
-        [ActionDescription("Sys.Create")]
-        public ActionResult CreateGroup(DeviceVM vm)
-        {
-            if (!ModelState.IsValid)
-            {
-                return PartialView(vm);
-            }
-            else
-            {
-                vm.Entity.DeviceTypeEnum = Model.DeviceTypeEnum.Group;
-                vm.DoAdd();
-                if (!ModelState.IsValid)
-                {
-                    vm.DoReInit();
-                    return PartialView(vm);
-                }
-                else
-                {
-                    return FFResult().CloseDialog().RefreshGrid();
-                }
-            }
-        }
-        #endregion
-
-        #region Edit
-        [ActionDescription("Sys.Edit")]
-        public ActionResult Edit(string id)
-        {
-            var vm = Wtm.CreateVM<DeviceVM>(id);
-            return PartialView(vm);
         }
 
         [ActionDescription("Sys.Edit")]
-        [HttpPost]
-        [ValidateFormItemOnly]
-        public ActionResult Edit(DeviceVM vm)
+        [HttpPut("Edit")]
+        public IActionResult Edit(DeviceVM vm)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                vm.DoEdit();
+                vm.DoEdit(false);
                 if (!ModelState.IsValid)
                 {
-                    vm.DoReInit();
-                    return PartialView(vm);
+                    return BadRequest(ModelState.GetErrorJson());
                 }
                 else
                 {
-                    return FFResult().CloseDialog().RefreshGridRow(vm.Entity.ID);
+                    return Ok(vm.Entity);
                 }
             }
         }
-        #endregion
 
-        #region Delete
+		[HttpPost("BatchDelete")]
         [ActionDescription("Sys.Delete")]
-        public ActionResult Delete(string id)
+        public IActionResult BatchDelete(string[] ids)
         {
-            var vm = Wtm.CreateVM<DeviceVM>(id);
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Delete")]
-        [HttpPost]
-        public ActionResult Delete(string id, IFormCollection nouse)
-        {
-            var vm = Wtm.CreateVM<DeviceVM>(id);
-            vm.DoDelete();
-            if (!ModelState.IsValid)
+            var vm = Wtm.CreateVM<DeviceBatchVM>();
+            if (ids != null && ids.Count() > 0)
             {
-                return PartialView(vm);
+                vm.Ids = ids;
             }
             else
             {
-                return FFResult().CloseDialog().RefreshGrid();
+                return Ok();
             }
-        }
-        #endregion
-
-        #region Details
-        [ActionDescription("Sys.Details")]
-        public ActionResult Details(string id)
-        {
-            var vm = Wtm.CreateVM<DeviceVM>(id);
-            return PartialView(vm);
-        }
-        #endregion
-
-        #region BatchEdit
-        [HttpPost]
-        [ActionDescription("Sys.BatchEdit")]
-        public ActionResult BatchEdit(string[] IDs)
-        {
-            var vm = Wtm.CreateVM<DeviceBatchVM>(Ids: IDs);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchEdit")]
-        public ActionResult DoBatchEdit(DeviceBatchVM vm, IFormCollection nouse)
-        {
-            if (!ModelState.IsValid || !vm.DoBatchEdit())
-            {
-                return PartialView("BatchEdit",vm);
-            }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.BatchEditSuccess", vm.Ids.Length]);
-            }
-        }
-        #endregion
-
-        #region BatchDelete
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult BatchDelete(string[] IDs)
-        {
-            var vm = Wtm.CreateVM<DeviceBatchVM>(Ids: IDs);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult DoBatchDelete(DeviceBatchVM vm, IFormCollection nouse)
-        {
             if (!ModelState.IsValid || !vm.DoBatchDelete())
             {
-                return PartialView("BatchDelete",vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.BatchDeleteSuccess", vm.Ids.Length]);
+                return Ok(ids.Count());
             }
-        }
-        #endregion
-
-        #region Import
-		[ActionDescription("Sys.Import")]
-        public ActionResult Import()
-        {
-            var vm = Wtm.CreateVM<DeviceImportVM>();
-            return PartialView(vm);
         }
 
-        [HttpPost]
-        [ActionDescription("Sys.Import")]
-        public ActionResult Import(DeviceImportVM vm, IFormCollection nouse)
-        {
-            if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
-            {
-                return PartialView(vm);
-            }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.ImportSuccess", vm.EntityList.Count.ToString()]);
-            }
-        }
-        #endregion
 
         [ActionDescription("Sys.Export")]
-        [HttpPost]
-        public IActionResult ExportExcel(DeviceListVM vm)
+        [HttpPost("ExportExcel")]
+        public IActionResult ExportExcel(DeviceSearcher searcher)
         {
+            var vm = Wtm.CreateVM<DeviceListVM>();
+            vm.Searcher = searcher;
+            vm.SearcherMode = ListVMSearchModeEnum.Export;
             return vm.GetExportData();
         }
 
-        #region 设备复制
-        [ActionDescription("设备复制")]
-        public ActionResult Copy()
+        [ActionDescription("Sys.CheckExport")]
+        [HttpPost("ExportExcelByIds")]
+        public IActionResult ExportExcelByIds(string[] ids)
         {
-            var vm = Wtm.CreateVM<CopyVM>();
-            return PartialView(vm);
+            var vm = Wtm.CreateVM<DeviceListVM>();
+            if (ids != null && ids.Count() > 0)
+            {
+                vm.Ids = new List<string>(ids);
+                vm.SearcherMode = ListVMSearchModeEnum.CheckExport;
+            }
+            return vm.GetExportData();
         }
 
-        [HttpPost]
-        [ActionDescription("设备复制")]
-        public ActionResult Copy(CopyVM vm)
+        [ActionDescription("Sys.DownloadTemplate")]
+        [HttpGet("GetExcelTemplate")]
+        public IActionResult GetExcelTemplate()
         {
-            if (!ModelState.IsValid)
+            var vm = Wtm.CreateVM<DeviceImportVM>();
+            var qs = new Dictionary<string, string>();
+            foreach (var item in Request.Query.Keys)
             {
-                return PartialView(vm);
+                qs.Add(item, Request.Query[item]);
+            }
+            vm.SetParms(qs);
+            var data = vm.GenerateTemplate(out string fileName);
+            return File(data, "application/vnd.ms-excel", fileName);
+        }
+
+        [ActionDescription("Sys.Import")]
+        [HttpPost("Import")]
+        public ActionResult Import(DeviceImportVM vm)
+        {
+            if (vm!=null && (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData()))
+            {
+                return BadRequest(vm.GetErrorJson());
             }
             else
             {
-                vm.Copy();
-                return FFResult().CloseDialog().RefreshGrid().Alert($"{vm.复制结果}");
+                return Ok(vm?.EntityList?.Count ?? 0);
             }
-        }
-        #endregion
-
-        #region 获取属性
-        [ActionDescription("获取属性")]
-        public ActionResult Attribute()
-        {
-            var vm = Wtm.CreateVM<AttributeVM>();
-            return PartialView(vm);
         }
 
-        [HttpPost]
-        [ActionDescription("获取属性")]
-        public ActionResult Attribute(AttributeVM vm)
+
+        [HttpGet("GetDrivers")]
+        public ActionResult GetDrivers()
         {
-            if (!ModelState.IsValid)
-            {
-                return PartialView(vm);
-            }
-            else
-            {
-                vm.Request();
-                return FFResult().CloseDialog().RefreshGrid().Alert($"{vm.请求结果}");
-            }
+            return Ok(DC.Set<Driver>().GetSelectListItems(Wtm, x => x.AssembleName));
         }
-        #endregion
-        public IActionResult GetMethods(Guid? ID)
+
+        [HttpGet("GetDevices")]
+        public ActionResult GetDevices()
         {
-            return JsonMore(_DeviceService.GetDriverMethods(ID));
+            return Ok(DC.Set<Device>().GetSelectListItems(Wtm, x => x.DeviceName));
         }
+
     }
 }

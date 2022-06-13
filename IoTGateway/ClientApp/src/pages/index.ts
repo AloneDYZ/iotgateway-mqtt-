@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 页面集合
  */
 export default {
@@ -38,5 +38,40 @@ export default {
     controller: "WalkingTec.Mvvm.Admin.Api,DataPrivilege",
     icon: "el-icon-odometer"
   }
+
+, device: {
+    name: '设备维护',
+    path: '/device',
+    controller: 'IoTGateway.Controllers,Device'
+    }
+
+, driver: {
+    name: '驱动管理',
+    path: '/driver',
+    controller: 'IoTGateway.Controllers,Driver'
+    }
+
+, deviceconfig: {
+    name: '通讯配置',
+    path: '/deviceconfig',
+    controller: 'IoTGateway.Controllers,DeviceConfig'
+    }
+
+, devicevariable: {
+    name: '变量配置',
+    path: '/devicevariable',
+    controller: 'IoTGateway.Controllers,DeviceVariable'
+    }
+
+, systemconfig: {
+    name: '传输配置',
+    path: '/systemconfig',
+    controller: 'IoTGateway.Controllers,SystemConfig'
+    }
 /**WTM**/
+ 
+ 
+ 
+ 
+ 
 };

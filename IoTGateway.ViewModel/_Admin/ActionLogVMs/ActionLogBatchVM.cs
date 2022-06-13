@@ -2,7 +2,6 @@
 using System;
 using WalkingTec.Mvvm.Core;
 
-
 namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.ActionLogVMs
 {
     public class ActionLogBatchVM : BaseBatchVM<ActionLog, ActionLog_BatchEdit>

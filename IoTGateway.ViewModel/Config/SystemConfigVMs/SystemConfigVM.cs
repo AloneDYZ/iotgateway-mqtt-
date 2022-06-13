@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Core.Extensions;
 using IoTGateway.Model;
-using Plugin;
+
 
 namespace IoTGateway.ViewModel.Config.SystemConfigVMs
 {
@@ -29,8 +29,6 @@ namespace IoTGateway.ViewModel.Config.SystemConfigVMs
         public override void DoEdit(bool updateAllFields = false)
         {
             base.DoEdit(updateAllFields);
-            var myMqttClient = Wtm.ServiceProvider.GetService(typeof(MyMqttClient)) as MyMqttClient;
-            myMqttClient.ConnectAsync();
         }
 
         public override void DoDelete()

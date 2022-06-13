@@ -1,219 +1,168 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using WalkingTec.Mvvm.Core;
-using WalkingTec.Mvvm.Mvc;
 using WalkingTec.Mvvm.Core.Extensions;
+using WalkingTec.Mvvm.Mvc;
 using IoTGateway.ViewModel.Config.SystemConfigVMs;
+using IoTGateway.Model;
+
 
 namespace IoTGateway.Controllers
 {
     [Area("Config")]
-    [ActionDescription("系统配置")]
-    public partial class SystemConfigController : BaseController
+    [AuthorizeJwtWithCookie]
+    [ActionDescription("传输配置")]
+    [ApiController]
+    [Route("api/SystemConfig")]
+	public partial class SystemConfigController : BaseApiController
     {
-        #region Search
         [ActionDescription("Sys.Search")]
-        public ActionResult Index()
+        [HttpPost("Search")]
+		public IActionResult Search(SystemConfigSearcher searcher)
         {
-            var vm = Wtm.CreateVM<SystemConfigListVM>();
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Search")]
-        [HttpPost]
-        public string Search(SystemConfigSearcher searcher)
-        {
-            var vm = Wtm.CreateVM<SystemConfigListVM>(passInit: true);
             if (ModelState.IsValid)
             {
+                var vm = Wtm.CreateVM<SystemConfigListVM>(passInit: true);
                 vm.Searcher = searcher;
-                return vm.GetJson(false);
+                return Content(vm.GetJson());
             }
             else
             {
-                return vm.GetError();
+                return BadRequest(ModelState.GetErrorJson());
             }
         }
 
-        #endregion
-
-        #region Create
-        [ActionDescription("Sys.Create")]
-        public ActionResult Create()
+        [ActionDescription("Sys.Get")]
+        [HttpGet("{id}")]
+        public SystemConfigVM Get(string id)
         {
-            var vm = Wtm.CreateVM<SystemConfigVM>();
-            return PartialView(vm);
+            var vm = Wtm.CreateVM<SystemConfigVM>(id);
+            return vm;
         }
 
-        [HttpPost]
         [ActionDescription("Sys.Create")]
-        public ActionResult Create(SystemConfigVM vm)
+        [HttpPost("Add")]
+        public IActionResult Add(SystemConfigVM vm)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
                 vm.DoAdd();
                 if (!ModelState.IsValid)
                 {
-                    vm.DoReInit();
-                    return PartialView(vm);
+                    return BadRequest(ModelState.GetErrorJson());
                 }
                 else
                 {
-                    return FFResult().CloseDialog().RefreshGrid();
+                    return Ok(vm.Entity);
                 }
             }
-        }
-        #endregion
 
-        #region Edit
-        [ActionDescription("Sys.Edit")]
-        public ActionResult Edit(string id)
-        {
-            var vm = Wtm.CreateVM<SystemConfigVM>(id);
-            return PartialView(vm);
         }
 
         [ActionDescription("Sys.Edit")]
-        [HttpPost]
-        [ValidateFormItemOnly]
-        public ActionResult Edit(SystemConfigVM vm)
+        [HttpPut("Edit")]
+        public IActionResult Edit(SystemConfigVM vm)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView(vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                vm.DoEdit();
+                vm.DoEdit(false);
                 if (!ModelState.IsValid)
                 {
-                    vm.DoReInit();
-                    return PartialView(vm);
+                    return BadRequest(ModelState.GetErrorJson());
                 }
                 else
                 {
-                    return FFResult().CloseDialog().RefreshGridRow(vm.Entity.ID);
+                    return Ok(vm.Entity);
                 }
             }
         }
-        #endregion
 
-        #region Delete
+		[HttpPost("BatchDelete")]
         [ActionDescription("Sys.Delete")]
-        public ActionResult Delete(string id)
+        public IActionResult BatchDelete(string[] ids)
         {
-            var vm = Wtm.CreateVM<SystemConfigVM>(id);
-            return PartialView(vm);
-        }
-
-        [ActionDescription("Sys.Delete")]
-        [HttpPost]
-        public ActionResult Delete(string id, IFormCollection nouse)
-        {
-            var vm = Wtm.CreateVM<SystemConfigVM>(id);
-            vm.DoDelete();
-            if (!ModelState.IsValid)
+            var vm = Wtm.CreateVM<SystemConfigBatchVM>();
+            if (ids != null && ids.Count() > 0)
             {
-                return PartialView(vm);
+                vm.Ids = ids;
             }
             else
             {
-                return FFResult().CloseDialog().RefreshGrid();
+                return Ok();
             }
-        }
-        #endregion
-
-        #region Details
-        [ActionDescription("Sys.Details")]
-        public ActionResult Details(string id)
-        {
-            var vm = Wtm.CreateVM<SystemConfigVM>(id);
-            return PartialView(vm);
-        }
-        #endregion
-
-        #region BatchEdit
-        [HttpPost]
-        [ActionDescription("Sys.BatchEdit")]
-        public ActionResult BatchEdit(string[] IDs)
-        {
-            var vm = Wtm.CreateVM<SystemConfigBatchVM>(Ids: IDs);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchEdit")]
-        public ActionResult DoBatchEdit(SystemConfigBatchVM vm, IFormCollection nouse)
-        {
-            if (!ModelState.IsValid || !vm.DoBatchEdit())
-            {
-                return PartialView("BatchEdit",vm);
-            }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.BatchEditSuccess", vm.Ids.Length]);
-            }
-        }
-        #endregion
-
-        #region BatchDelete
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult BatchDelete(string[] IDs)
-        {
-            var vm = Wtm.CreateVM<SystemConfigBatchVM>(Ids: IDs);
-            return PartialView(vm);
-        }
-
-        [HttpPost]
-        [ActionDescription("Sys.BatchDelete")]
-        public ActionResult DoBatchDelete(SystemConfigBatchVM vm, IFormCollection nouse)
-        {
             if (!ModelState.IsValid || !vm.DoBatchDelete())
             {
-                return PartialView("BatchDelete",vm);
+                return BadRequest(ModelState.GetErrorJson());
             }
             else
             {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.BatchDeleteSuccess", vm.Ids.Length]);
+                return Ok(ids.Count());
             }
-        }
-        #endregion
-
-        #region Import
-		[ActionDescription("Sys.Import")]
-        public ActionResult Import()
-        {
-            var vm = Wtm.CreateVM<SystemConfigImportVM>();
-            return PartialView(vm);
         }
 
-        [HttpPost]
-        [ActionDescription("Sys.Import")]
-        public ActionResult Import(SystemConfigImportVM vm, IFormCollection nouse)
-        {
-            if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
-            {
-                return PartialView(vm);
-            }
-            else
-            {
-                return FFResult().CloseDialog().RefreshGrid().Alert(Localizer["Sys.ImportSuccess", vm.EntityList.Count.ToString()]);
-            }
-        }
-        #endregion
 
         [ActionDescription("Sys.Export")]
-        [HttpPost]
-        public IActionResult ExportExcel(SystemConfigListVM vm)
+        [HttpPost("ExportExcel")]
+        public IActionResult ExportExcel(SystemConfigSearcher searcher)
         {
+            var vm = Wtm.CreateVM<SystemConfigListVM>();
+            vm.Searcher = searcher;
+            vm.SearcherMode = ListVMSearchModeEnum.Export;
             return vm.GetExportData();
         }
+
+        [ActionDescription("Sys.CheckExport")]
+        [HttpPost("ExportExcelByIds")]
+        public IActionResult ExportExcelByIds(string[] ids)
+        {
+            var vm = Wtm.CreateVM<SystemConfigListVM>();
+            if (ids != null && ids.Count() > 0)
+            {
+                vm.Ids = new List<string>(ids);
+                vm.SearcherMode = ListVMSearchModeEnum.CheckExport;
+            }
+            return vm.GetExportData();
+        }
+
+        [ActionDescription("Sys.DownloadTemplate")]
+        [HttpGet("GetExcelTemplate")]
+        public IActionResult GetExcelTemplate()
+        {
+            var vm = Wtm.CreateVM<SystemConfigImportVM>();
+            var qs = new Dictionary<string, string>();
+            foreach (var item in Request.Query.Keys)
+            {
+                qs.Add(item, Request.Query[item]);
+            }
+            vm.SetParms(qs);
+            var data = vm.GenerateTemplate(out string fileName);
+            return File(data, "application/vnd.ms-excel", fileName);
+        }
+
+        [ActionDescription("Sys.Import")]
+        [HttpPost("Import")]
+        public ActionResult Import(SystemConfigImportVM vm)
+        {
+            if (vm!=null && (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData()))
+            {
+                return BadRequest(vm.GetErrorJson());
+            }
+            else
+            {
+                return Ok(vm?.EntityList?.Count ?? 0);
+            }
+        }
+
 
     }
 }

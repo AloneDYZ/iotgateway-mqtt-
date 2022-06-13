@@ -14,6 +14,8 @@ namespace IoTGateway.ViewModel.BasicData.DriverVMs
     {
         [Display(Name = "驱动名")]
         public String DriverName { get; set; }
+        [Display(Name = "程序集名")]
+        public String AssembleName { get; set; }
 
         protected override void InitVM()
         {

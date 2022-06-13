@@ -18,7 +18,7 @@ namespace Plugin
     public class DriverService//: IDependency
     {
         private readonly ILogger<DriverService> _logger;
-        string DriverPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"drivers/net6.0");
+        string DriverPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"drivers\");
         string[] driverFiles;
         public List<DriverInfo> DriverInfos = new List<DriverInfo>();
         public DriverService(IConfiguration ConfigRoot, ILogger<DriverService> logger)
@@ -27,7 +27,7 @@ namespace Plugin
             try
             {
                 _logger.LogInformation("LoadDriverFiles Start");
-                driverFiles = Directory.GetFiles(DriverPath).Where(x => Path.GetExtension(x) == ".dll").ToArray();
+                driverFiles = Directory.GetFiles(DriverPath, "Driver*.dll", SearchOption.AllDirectories).ToArray();
                 _logger.LogInformation($"LoadDriverFiles End，Count{driverFiles.Count()}");
             }
             catch (Exception ex)

@@ -21,7 +21,7 @@ namespace IoTGateway.ViewModel.BasicData.DeviceVariableVMs
         public ExcelPropety Method_Excel = ExcelPropety.CreateProperty<DeviceVariable>(x => x.Method);
         [Display(Name = "地址")]
         public ExcelPropety DeviceAddress_Excel = ExcelPropety.CreateProperty<DeviceVariable>(x => x.DeviceAddress);
-        [Display(Name = "数据类型")]
+        [Display(Name = "类型")]
         public ExcelPropety DataType_Excel = ExcelPropety.CreateProperty<DeviceVariable>(x => x.DataType);
         [Display(Name = "表达式")]
         public ExcelPropety Expressions_Excel = ExcelPropety.CreateProperty<DeviceVariable>(x => x.Expressions);
@@ -29,11 +29,12 @@ namespace IoTGateway.ViewModel.BasicData.DeviceVariableVMs
         public ExcelPropety ProtectType_Excel = ExcelPropety.CreateProperty<DeviceVariable>(x => x.ProtectType);
         public ExcelPropety Device_Excel = ExcelPropety.CreateProperty<DeviceVariable>(x => x.DeviceId);
 
-        protected override void InitVM()
+	    protected override void InitVM()
         {
             Device_Excel.DataType = ColumnDataType.ComboBox;
             Device_Excel.ListItems = DC.Set<Device>().GetSelectListItems(Wtm, y => y.DeviceName);
         }
+
     }
 
     public class DeviceVariableImportVM : BaseImportVM<DeviceVariableTemplateVM, DeviceVariable>
