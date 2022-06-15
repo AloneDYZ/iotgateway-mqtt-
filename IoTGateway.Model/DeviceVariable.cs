@@ -1,6 +1,7 @@
 ﻿using PluginInterface;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using WalkingTec.Mvvm.Core;
 
 namespace IoTGateway.Model
@@ -23,6 +24,7 @@ namespace IoTGateway.Model
         public PluginInterface.DataTypeEnum DataType { get; set; }
 
         [Display(Name = "表达式")]
+        [JsonConverter(typeof(JsonStringConverter))]
         public string Expressions { get; set; }
 
         [Display(Name = "权限")]
